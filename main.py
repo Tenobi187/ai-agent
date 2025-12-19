@@ -1,178 +1,152 @@
-import uvicorn
+# Основной файл запуска системы
 import json
-import re
+import uvicorn
+from datetime import datetime
+import os
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-from openai import AsyncOpenAI
-from loguru import logger
+from fastapi import FastAPI, WebSocket, UploadFile, File, Form, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-from config import GROQ_API_KEY, SYSTEM_PROMPT, TOOLS
-from functions import run_comand, save_code, search, fetch_page
+from dotenv import load_dotenv
+from agent import create_agent_model, process_question
+from schemas import ResearchReport
+from db import init_db, save_document, list_documents, delete_document, delete_all_documents
+from utils import extract_semantic_chunks
+
+load_dotenv()
+
+init_db()
 
 app = FastAPI()
+agent_model = create_agent_model()
 
-openai_client = AsyncOpenAI(
-    base_url="https://api.groq.com/openai/v1",
-    api_key=GROQ_API_KEY
-)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-def clean_response(text: str) -> str:
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r'^(AI:|Ассистент:|Bot:)\s*', '', text, flags=re.IGNORECASE)
-    return text.strip()
 
 @app.get("/")
 async def index():
-    with open("index.html", "r", encoding="UTF-8") as f:
-        html = f.read()
-    return HTMLResponse(html)
+    with open("index.html", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
 
-@app.get("/styles.css")
-async def get_styles():
-    with open("styles.css", "r", encoding="UTF-8") as f:
-        return HTMLResponse(f.read(), media_type="text/css")
 
-@app.get("/chat.js")
-async def get_chat_js():
-    with open("chat.js", "r", encoding="UTF-8") as f:
-        return HTMLResponse(f.read(), media_type="application/javascript")
+@app.post("/upload")
+async def upload_document(
+    file: UploadFile = File(...),
+    user_id: str = Form("default"),
+):
+    """
+    Загрузка документа в хранилище.
+    Пока используем одного пользователя по умолчанию: user_id = 'default'.
+    """
+    
+    uploads_dir = "uploads"
+    os.makedirs(uploads_dir, exist_ok=True)
+    temp_path = os.path.join(uploads_dir, file.filename)
+
+    content_bytes = await file.read()
+    with open(temp_path, "wb") as f:
+        f.write(content_bytes)
+
+   
+    from document_reader import read_document  
+    text = read_document(temp_path)
+    try:
+        os.remove(temp_path)
+    except OSError:
+        pass
+    
+    if not text:
+        return {"status": "error", "message": "Не удалось прочитать содержимое файла"}
+
+    chunks = extract_semantic_chunks(text)
+    created_at = datetime.utcnow().isoformat()
+    doc_id = save_document(user_id=user_id, name=file.filename, chunks=chunks, created_at=created_at)
+
+    return {
+        "status": "ok",
+        "document_id": doc_id,
+        "chunks": len(chunks),
+        "filename": file.filename,
+    }
+
+
+@app.get("/documents")
+async def get_documents(user_id: str = "default"):
+    """Список загруженных документов пользователя."""
+    docs = list_documents(user_id)
+    return {"user_id": user_id, "documents": docs}
+
+
+@app.delete("/documents/{document_id}")
+async def remove_document(document_id: int, user_id: str = "default"):
+    """Удаление одного документа пользователя по id."""
+    ok = delete_document(user_id, document_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+    return {"status": "ok", "deleted_id": document_id}
+
+@app.delete("/documents")
+async def remove_all_documents(user_id: str = "default"):
+    """
+    Полная очистка документов пользователя.
+    Используется для сброса контекста и предотвращения конфликтов.
+    """
+    deleted_count = delete_all_documents(user_id)
+
+    return {
+        "status": "ok",
+        "deleted_documents": deleted_count
+    }
+
+    
+def report_to_markdown(report: ResearchReport) -> str:
+    md = "### Ответ\n\n"
+    md += report.answer.strip() + "\n\n"
+
+    if report.sources:
+        md += "### Источники\n"
+        for src in report.sources:
+            md += f'- <a href="{src}" target="_blank" rel="noopener noreferrer">{src}</a>\n'
+
+    return md
+
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    
-    chat_history = [{
-        "role": "system",
-        "content": SYSTEM_PROMPT
-    }]
+async def websocket_endpoint(ws: WebSocket):
+    await ws.accept()
+    chat_history = []
 
     try:
+        if agent_model is None:
+            await ws.send_text(json.dumps({
+                "content": "Ошибка: модель агента не инициализирована. Проверьте переменную окружения GROQ_API_KEY."
+            }))
+            return
+
         while True:
-            user_input = await websocket.receive_text()
-            logger.info(f"Получено сообщение от пользователя: {user_input[:100]}...")
-            
+            question = await ws.receive_text()
+
+            report = process_question(question, agent_model, user_id="default")
+           
             chat_history.append({
-                "role": "user",
-                "content": user_input
+                "question": question,
+                "answer": report.answer
             })
 
-            logger.info("Отправляем запрос в Groq API...")
-            
-            try:
-                ai_response = await openai_client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
-                    messages=chat_history,
-                    tools=TOOLS,
-                    tool_choice="auto",
-                    temperature=0.7,
-                    max_tokens=1024,
-                    top_p=0.9,
-                    frequency_penalty=0.1,
-                    presence_penalty=0.1
-                )
-
-                ai_message = ai_response.choices[0].message
-                
-                chat_history.append({
-                    "role": "assistant",
-                    "content": ai_message.content or "",
-                    "tool_calls": ai_message.tool_calls
-                })
-
-                if ai_message.tool_calls:
-                    tool_results = []
-                    
-                    for tool_call in ai_message.tool_calls:
-                        func_name = tool_call.function.name
-                        args = json.loads(tool_call.function.arguments)
-                        result = ""
-
-                        try:
-                            if func_name == "run_command":
-                                if "input_str" in args:
-                                    result = run_comand(args["command"], args["input_str"])
-                                else:
-                                    result = run_comand(args["command"])
-                            elif func_name == "save_code":
-                                result = save_code(args["code"], args["filename"])
-                            elif func_name == "search":
-                                result = search(args["query"])
-                            elif func_name == "fetch_page":
-                                result = await fetch_page(args["url"])
-                            else:
-                                result = f"Неизвестная функция {func_name}"
-                        except Exception as e:
-                            result = f"Ошибка вызова функции {func_name}: {str(e)}"
-                        
-                        tool_results.append(result)
-                        
-                        chat_history.append({
-                            "role": "tool",
-                            "content": result,
-                            "tool_call_id": tool_call.id
-                        })
-
-                    final_response = await openai_client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
-                        messages=chat_history,
-                        temperature=0.7,
-                        max_tokens=1024
-                    )
-
-                    final_message = final_response.choices[0].message.content
-                    final_message = clean_response(final_message)
-                    
-                    chat_history.append({
-                        "role": "assistant",
-                        "content": final_message
-                    })
-
-                    await websocket.send_text(json.dumps({
-                        "role": "assistant",
-                        "content": final_message
-                    }))
-                    
-                else:
-                    ai_message_content = ai_message.content or ""
-                    ai_message_content = clean_response(ai_message_content)
-                    
-                    chat_history[-1]["content"] = ai_message_content
-                    
-                    await websocket.send_text(json.dumps({
-                        "role": "assistant",
-                        "content": ai_message_content
-                    }))
-                
-                logger.info(f"Ответ отправлен пользователю")
-                
-            except Exception as api_error:
-                logger.error(f"Ошибка Groq API: {api_error}")
-                error_message = f"**⚠️ Ошибка API**\n\nПроизошла ошибка при обращении к ИИ:\n```\n{str(api_error)}\n```\n\nПожалуйста, попробуйте еще раз."
-                
-                await websocket.send_text(json.dumps({
-                    "role": "assistant",
-                    "content": error_message
-                }))
-
-    except WebSocketDisconnect:
-        logger.info("Клиент отключился от WebSocket")
-    except Exception as e:
-        logger.error(f"Ошибка в WebSocket: {e}")
-        try:
-            await websocket.send_text(json.dumps({
-                "role": "assistant",
-                "content": f"**❌ Системная ошибка**\n\n```\n{str(e)}\n```"
+            await ws.send_text(json.dumps({
+                "content": report_to_markdown(report)
             }))
-        except:
-            pass
+
+    except Exception as e:
+        await ws.send_text(json.dumps({
+            "content": f"Ошибка: {e}"
+        }))
 
 if __name__ == "__main__":
-    logger.info("Запуск сервера на localhost:8000")
     uvicorn.run(
         "main:app",
         host="localhost",
         port=8000,
-        reload=True,
-        log_level="info"
+        reload=True
     )

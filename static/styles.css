@@ -1,0 +1,236 @@
+:root {
+    --bg: #b8b8ff;
+    --panel: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+
+    --accent: #b8b8ff;
+    --accent-soft: #e0e0ff;
+
+    --border: #d1d5db;
+
+    --shadow-panel: 0 20px 40px rgba(0, 0, 0, 0.18);
+    --shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Центральная карточка */
+
+.chat-container {
+    width: 100%;
+    max-width: 780px;
+    height: 90vh;
+
+    background: var(--panel);
+    border-radius: 20px;
+    box-shadow: var(--shadow-panel);
+
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Шапка */
+
+.header {
+    text-align: center;
+    padding: 32px 32px 20px;
+}
+
+.header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.header .subtitle {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+/* Загрузка документов */
+
+.upload-area {
+    padding: 0 24px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.upload-label {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* Сообщения */
+
+.messages {
+    flex: 1;
+    padding: 24px 32px;
+    overflow-y: auto;
+}
+
+/* Пользователь */
+
+.message.user {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.user .message-content {
+    background: var(--accent);
+    padding: 10px 16px;
+    border-radius: 14px;
+    font-size: 15px;
+    box-shadow: var(--shadow-soft);
+}
+
+/* Агент */
+
+.message.agent {
+    margin-bottom: 20px;
+}
+
+.agent .message-content {
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    padding: 20px 22px;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+/* Markdown внутри ответа */
+
+.agent h1,
+.agent h2,
+.agent h3 {
+    margin: 0.8em 0 0.4em;
+    font-weight: 600;
+}
+
+.agent p {
+    margin: 0.6em 0;
+}
+
+.agent ul {
+    margin: 0.6em 0 0.6em 1.2em;
+}
+
+.agent li {
+    margin: 0.35em 0;
+}
+
+.agent a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.agent a:hover {
+    text-decoration: underline;
+}
+
+/* Поле ввода */
+
+.input-area {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+}
+
+#messageInput {
+    flex: 1;
+    padding: 12px 14px;
+    font-size: 15px;
+
+    border-radius: 14px;
+    border: 2px solid #9381ff;
+    outline: none;
+}
+
+#messageInput::placeholder {
+    color: var(--muted);
+}
+
+#sendButton {
+    width: 44px;
+    height: 44px;
+
+    border: none;
+    border-radius: 50%;
+    background: #9381ff;
+    color: white;
+
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#sendButton:hover {
+    opacity: 0.9;
+}
+
+/* Кнопки действий */
+
+.button {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: background 0.15s ease, opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.button-primary {
+    background: #9381ff;
+    color: white;
+}
+
+.button-primary:hover {
+    opacity: 0.9;
+}
+
+.button-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.button-danger:hover {
+    opacity: 0.9;
+}
+
+/* Мобильные */
+
+@media (max-width: 640px) {
+    .chat-container {
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    .messages {
+        padding: 20px;
+    }
+}
