@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | Поисковый агент</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Единая навигационная панель -->
+    <div class="nav-panel" id="navPanel">
+        <div class="nav-links">
+            <a href="/" class="nav-link" id="chatLink">Чат</a>
+            <a href="/my-documents" class="nav-link" id="docsLink">Мои документы</a>
+            <a href="/admin" class="nav-link active" id="adminLink">Админ-панель</a>
+        </div>
+        <div class="user-controls">
+            <span class="username" id="username"></span>
+            <button class="logout-button" id="logoutButton">Выйти</button>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Панель управления</h1>
+          
+        </div>
+
+        <div id="errorMessage" style="display: none;" class="message error-message">
+
+            <span id="errorText"></span>
+            <span class="message-close" onclick="this.parentElement.style.display='none'">×</span>
+        </div>
+        <div id="successMessage" style="display: none;" class="message success-message">
+
+            <span id="successText"></span>
+            <span class="message-close" onclick="this.parentElement.style.display='none'">×</span>
+        </div>
+
+        <!-- Раздел пользователей -->
+        <div class="admin-section">
+            <h2>Пользователи системы</h2>
+            <div class="table-wrapper">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя пользователя</th>
+                            <th>Email</th>
+                            <th>Роль</th>
+                            <th>Документов</th>
+                            <th>Дата регистрации</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="7" class="loading">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Раздел документов -->
+        <div class="admin-section">
+            <h2>Все документы</h2>
+            <div style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+                <button onclick="deleteAllDocuments()" class="button button-danger">Удалить все документы</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="documentsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя файла</th>
+                            <th>Владелец</th>
+                            <th>Чанков</th>
+                            <th>Дата загрузки</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documentsTableBody">
+                        <tr><td colspan="6" class="loading">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/admin.js"></script>
+    <script src="/static/auth-check.js"></script>
+</body>
+</html>

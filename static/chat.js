@@ -6,22 +6,74 @@ const uploadBtn = document.getElementById("uploadButton");
 
 let socket;
 
-// WebSocket
+// Функция получения токена
+function getToken() {
+    return localStorage.getItem('token');
+}
+
+// Проверка авторизации перед действиями
+function checkAuthBeforeAction() {
+    const token = getToken();
+    if (!token) {
+        alert('Сначала войдите в систему');
+        window.location.href = '/login';
+        return false;
+    }
+    return true;
+}
+
+// Подключение WebSocket
+// Подключение WebSocket
 function connect() {
+    const token = getToken();
+    if (!token) {
+        console.log('Нет токена для WebSocket');
+        return;
+    }
+    
+    // Если уже есть соединение, не создаем новое
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        return;
+    }
+    
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     socket = new WebSocket(`${protocol}://${location.host}/ws`);
 
+    socket.onopen = function() {
+        console.log('WebSocket открыт, отправляем токен');
+        socket.send(JSON.stringify({ token: token }));
+    };
+    
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        
+        if (data.error) {
+            console.error('WebSocket ошибка:', data.error);
+            if (data.error.includes('Неавторизован')) {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+            addMessage("agent", `_Ошибка: ${data.error}_`, true);
+            return;
+        }
+        
         addMessage("agent", data.content, true);
     };
 
-    socket.onclose = () => {
-        addMessage("agent", "_Соединение закрыто. Обновите страницу._", true);
+    socket.onclose = (event) => {
+        console.log('WebSocket закрыт, код:', event.code);
+        // Не показываем сообщение при нормальном закрытии (код 1001)
+        if (event.code !== 1001) {
+            addMessage("agent", "_Соединение закрыто. Обновите страницу._", true);
+        }
+    };
+    
+    socket.onerror = (error) => {
+        console.error('WebSocket ошибка:', error);
     };
 }
 
-// Сообщения
+// Добавление сообщения в чат
 function addMessage(role, text, markdown = false) {
     const msg = document.createElement("div");
     msg.className = `message ${role}`;
@@ -40,6 +92,8 @@ function addMessage(role, text, markdown = false) {
 function sendMessage() {
     const text = input.value.trim();
     if (!text || !socket) return;
+    
+    if (!checkAuthBeforeAction()) return;
 
     addMessage("user", text);
     socket.send(text);
@@ -49,13 +103,27 @@ function sendMessage() {
 
 // Загрузка файлов
 async function uploadFiles() {
-    if (!fileInput || fileInput.files.length === 0) return;
+    console.log('uploadFiles вызван');
+    
+    if (!fileInput || fileInput.files.length === 0) {
+        alert('Выберите файлы для загрузки');
+        return;
+    }
+    
+    const token = getToken();
+    console.log('Токен для загрузки:', token ? token.substring(0, 20) + '...' : 'null');
+    
+    if (!token) {
+        alert('Сначала войдите в систему');
+        window.location.href = '/login';
+        return;
+    }
 
     const files = Array.from(fileInput.files);
+    console.log('Файлы для загрузки:', files.map(f => f.name));
 
     for (const file of files) {
         const formData = new FormData();
-        formData.append("user_id", "default");
         formData.append("file", file);
 
         addMessage("agent", `Загружаю документ: **${file.name}**...`, true);
@@ -63,19 +131,28 @@ async function uploadFiles() {
         try {
             const resp = await fetch("/upload", {
                 method: "POST",
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: formData,
             });
 
+            console.log('Ответ статус:', resp.status);
+            
             if (!resp.ok) {
+                const errorData = await resp.json().catch(() => ({}));
+                console.error('Ошибка загрузки:', errorData);
                 addMessage(
                     "agent",
-                    `Не удалось загрузить файл ${file.name}.`,
+                    `Не удалось загрузить файл ${file.name}: ${errorData.detail || resp.statusText}`,
                     false
                 );
                 continue;
             }
 
             const data = await resp.json();
+            console.log('Успех:', data);
+            
             if (data.status === "ok") {
                 addMessage(
                     "agent",
@@ -90,6 +167,7 @@ async function uploadFiles() {
                 );
             }
         } catch (e) {
+            console.error('Ошибка сети:', e);
             addMessage(
                 "agent",
                 `Ошибка сети при загрузке файла ${file.name}.`,
@@ -101,6 +179,8 @@ async function uploadFiles() {
     fileInput.value = "";
 }
 
+
+// Назначение обработчиков событий
 sendBtn.onclick = sendMessage;
 
 input.addEventListener("keydown", (e) => {
@@ -114,8 +194,6 @@ if (uploadBtn) {
     uploadBtn.onclick = uploadFiles;
 }
 
-document.addEventListener("DOMContentLoaded", connect);
-
 // Кнопка выбора файлов
 const selectFilesButton = document.getElementById("selectFilesButton");
 
@@ -125,45 +203,12 @@ if (selectFilesButton && fileInput) {
     });
 }
 
-// Очистка документов
-const clearButton = document.getElementById("clearButton");
+// Функция инициализации чата (вызывается из auth-check.js)
+window.initializeChat = function() {
+    console.log('Инициализация чата...');
+    if (socket) {
+        socket.close();
+    }
+    connect();
+};
 
-if (clearButton) {
-    clearButton.addEventListener("click", async () => {
-        const confirmClear = confirm(
-            "Вы уверены, что хотите удалить все загруженные документы?\nЭто действие необратимо."
-        );
-
-        if (!confirmClear) {
-            return;
-        }
-
-        try {
-            const response = await fetch("/documents", {
-                method: "DELETE"
-            });
-
-            const result = await response.json();
-
-            if (result.status === "ok") {
-                addMessage(
-                    "agent",
-                    `Все документы удалены.\n\nУдалено файлов: **${result.deleted_documents}**.`,
-                    true
-                );
-            } else {
-                addMessage(
-                    "agent",
-                    "Ошибка при очистке документов.",
-                    false
-                );
-            }
-        } catch (error) {
-            addMessage(
-                "agent",
-                "Ошибка соединения с сервером при удалении документов.",
-                false
-            );
-        }
-    });
-}

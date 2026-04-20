@@ -60,14 +60,14 @@ def search_in_notes(query: str) -> str:
     return "\n".join(structured_results)
 
 
-def search_in_user_storage(query: str, user_id: str) -> str:
+def search_in_user_storage(query: str, user_id: int) -> str:
     """
-    Поиск информации в загруженных пользователем документах (через БД).
-    Формат результата такой же, как у search_in_notes.
+    Поиск информации в загруженных пользователем документах.
+    Теперь user_id - число!
     """
     all_results: List[Dict] = []
 
-    docs = get_user_documents(user_id)
+    docs = get_user_documents(user_id)  # функция из db.py
     for doc in docs:
         filename = doc["filename"]
         content = doc["content"] or ""
@@ -137,16 +137,22 @@ def analyze_and_synthesize(question: str, search_results: str, model):
     return response_text
 
 
-def process_question(question: str, model, user_id: Optional[str] = None) -> ResearchReport:
+def process_question(question: str, model, user_id: str = None) -> ResearchReport:
     """
-    Обрабатывает один вопрос:
-    - выполняет поиск по заметкам
-    - анализирует результаты с помощью модели
-    - возвращает структурированный ResearchReport
+    Обрабатывает вопрос для конкретного пользователя.
+    Если user_id не указан или "default" - ищет по файлам.
     """
-    if user_id:
-        search_results = search_in_user_storage(question, user_id)
+    if user_id and user_id != "default":
+        # Ищем в документах пользователя (теперь user_id может быть строкой или числом)
+        # Преобразуем в число, если это строка
+        try:
+            user_id_int = int(user_id) if isinstance(user_id, str) else user_id
+            search_results = search_in_user_storage(question, user_id_int)
+        except (ValueError, TypeError):
+            # Если не получилось преобразовать - ищем по файлам
+            search_results = search_in_notes.invoke(question)
     else:
+        # Старое поведение - поиск по файлам
         search_results = search_in_notes.invoke(question)
 
     response = analyze_and_synthesize(question, search_results, model)
@@ -157,7 +163,6 @@ def process_question(question: str, model, user_id: Optional[str] = None) -> Res
         answer=response,
         sources=sources
     )
-
 
 def run_agent():
     """Запускает основной цикл агента"""

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация | Поисковый агент</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* Дополнительные стили только для страниц авторизации */
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .auth-card {
+            background: var(--panel);
+            border-radius: 20px;
+            box-shadow: var(--shadow-panel);
+            padding: 40px 32px;
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .auth-header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        
+        .auth-header p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+        
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .form-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .form-group input {
+            padding: 12px 16px;
+            font-size: 15px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus {
+            border-color: var(--accent);
+        }
+        
+        .auth-button {
+            background: #9381ff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            margin-top: 10px;
+        }
+        
+        .auth-button:hover {
+            opacity: 0.9;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 14px;
+        }
+        
+        .auth-footer a {
+            color: #9381ff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .success-message {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .back-link:hover {
+            color: #9381ff;
+        }
+        
+        .password-hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        
+        
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Создать аккаунт</h1>
+                <p>Зарегистрируйтесь, чтобы начать работу</p>
+            </div>
+            
+            <!-- Место для сообщений -->
+            <div id="error" class="message error-message" style="display: none;"></div>
+            <div id="success" class="message success-message" style="display: none;"></div>
+            
+            <!-- Форма регистрации -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">Имя пользователя</label>
+                    <input type="text" id="username" name="username" placeholder="Придумайте имя пользователя" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Ваш email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" placeholder="Придумайте пароль" required>
+                    <div class="password-hint">Минимум 6 символов</div>
+                </div>
+                
+                <button type="submit" class="auth-button">Зарегистрироваться</button>
+            </form>
+            
+            <div class="auth-footer">
+                Уже есть аккаунт? <a href="/login">Войти</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/auth.js"></script>
+</body>
+</html>

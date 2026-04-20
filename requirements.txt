@@ -12,3 +12,5 @@ torch==2.9.1
 fastapi==0.124.4
 uvicorn[standard]
 python-multipart==0.0.21
+
+email-validator

@@ -24,40 +24,111 @@ body {
                  Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--bg);
     color: var(--text);
-
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    padding: 70px 20px 20px 20px;
 }
 
-/* Центральная карточка */
+/* ===== НАВИГАЦИОННАЯ ПАНЕЛЬ ===== */
+.nav-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    padding: 12px 30px;
+    box-shadow: var(--shadow-soft);
+    border-bottom: 1px solid var(--border);
+}
 
-.chat-container {
-    width: 100%;
-    max-width: 780px;
-    height: 90vh;
+.nav-links {
+    display: flex;
+    gap: 8px;
+}
 
+.nav-link {
+    padding: 8px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.nav-link:hover {
+    background: var(--accent-soft);
+    color: var(--text);
+}
+
+.nav-link.active {
+    background: #9381ff;
+    color: white;
+}
+
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-controls .username {
+    font-weight: 500;
+    color: var(--text);
+    font-size: 14px;
+    padding-right: 10px;
+    border-right: 1px solid var(--border);
+}
+
+.user-controls .logout-button {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* ===== ОБЩИЕ КОНТЕЙНЕРЫ ===== */
+.chat-container,
+.documents-container,
+.admin-container {
     background: var(--panel);
     border-radius: 20px;
     box-shadow: var(--shadow-panel);
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
+/* ===== ЧАТ (специфичные размеры) ===== */
+.chat-container {
+    max-width: 780px;
+    height: calc(100vh - 90px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-/* Шапка */
+/* ===== СТРАНИЦЫ (документы и админка) ===== */
+.documents-container,
+.admin-container {
+    padding: 30px;
+}
 
+/* ===== ОРИГИНАЛЬНЫЕ СТИЛИ ЧАТА ===== */
 .header {
     text-align: center;
     padding: 32px 32px 20px;
+    border-bottom: 2px solid #e5e7eb;
 }
 
 .header h1 {
     font-size: 26px;
     font-weight: 600;
-    letter-spacing: -0.01em;
 }
 
 .header .subtitle {
@@ -65,8 +136,6 @@ body {
     font-size: 14px;
     color: var(--muted);
 }
-
-/* Загрузка документов */
 
 .upload-area {
     padding: 0 24px 10px;
@@ -82,50 +151,73 @@ body {
     white-space: nowrap;
 }
 
-/* Сообщения */
-
 .messages {
     flex: 1;
     padding: 24px 32px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
 }
 
-/* Пользователь */
+/* Сбрасываем влияние общего .message для уведомлений */
+.messages .message {
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    align-items: normal;
+    gap: normal;
+}
 
-.message.user {
+/* Сообщение пользователя — прижато вправо */
+.messages .message.user {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 16px;
 }
 
+/* Сообщение агента — блочное */
+.messages .message.agent {
+    display: block;
+}
+
+/* Отступ между соседними сообщениями */
+.messages .message + .message {
+    margin-top: 8px;
+}
+
+/* Контент сообщений */
 .user .message-content {
     background: var(--accent);
-    padding: 10px 16px;
+    padding: 10px 10px;
     border-radius: 14px;
     font-size: 15px;
     box-shadow: var(--shadow-soft);
-}
-
-/* Агент */
-
-.message.agent {
-    margin-bottom: 20px;
 }
 
 .agent .message-content {
     background: var(--accent-soft);
     border: 2px solid var(--accent);
     border-radius: 14px;
-    padding: 20px 22px;
+    padding: 7px 15px;
     font-size: 15px;
     line-height: 1.7;
 }
 
-/* Markdown внутри ответа */
+/* Временное сообщение "Загрузка..." (опционально) */
+.messages .message.loading {
+    margin: 4px 0;
+    padding: 6px 12px;
+    background: #f3f4f6;
+    border-radius: 20px;
+    color: var(--muted);
+    font-size: 13px;
+    display: inline-block;
+}
 
-.agent h1,
-.agent h2,
-.agent h3 {
+.agent h1, .agent h2, .agent h3 {
     margin: 0.8em 0 0.4em;
     font-weight: 600;
 }
@@ -138,20 +230,10 @@ body {
     margin: 0.6em 0 0.6em 1.2em;
 }
 
-.agent li {
-    margin: 0.35em 0;
-}
-
 .agent a {
     color: #2563eb;
     text-decoration: none;
 }
-
-.agent a:hover {
-    text-decoration: underline;
-}
-
-/* Поле ввода */
 
 .input-area {
     padding: 20px 24px;
@@ -164,34 +246,21 @@ body {
     flex: 1;
     padding: 12px 14px;
     font-size: 15px;
-
     border-radius: 14px;
     border: 2px solid #9381ff;
     outline: none;
 }
 
-#messageInput::placeholder {
-    color: var(--muted);
-}
-
 #sendButton {
     width: 44px;
     height: 44px;
-
     border: none;
     border-radius: 50%;
     background: #9381ff;
     color: white;
-
     font-size: 18px;
     cursor: pointer;
 }
-
-#sendButton:hover {
-    opacity: 0.9;
-}
-
-/* Кнопки действий */
 
 .button {
     padding: 6px 14px;
@@ -200,7 +269,6 @@ body {
     font-size: 13px;
     cursor: pointer;
     box-shadow: var(--shadow-soft);
-    transition: background 0.15s ease, opacity 0.15s ease;
     white-space: nowrap;
 }
 
@@ -209,28 +277,456 @@ body {
     color: white;
 }
 
-.button-primary:hover {
-    opacity: 0.9;
-}
-
 .button-danger {
     background: #ef4444;
     color: white;
 }
 
-.button-danger:hover {
-    opacity: 0.9;
+/* ===== СТИЛИ ДЛЯ СТРАНИЦЫ "МОИ ДОКУМЕНТЫ" ===== */
+.documents-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--accent-soft);
 }
 
-/* Мобильные */
+.documents-header h1 {
+    font-size: 28px;
+    margin: 0;
+}
 
-@media (max-width: 640px) {
-    .chat-container {
-        height: 100vh;
-        border-radius: 0;
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: white;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th {
+    background: #9381ff;
+    color: white;
+    padding: 12px 15px;
+    text-align: left;
+}
+
+td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+tr:hover td {
+    background: var(--accent-soft);
+}
+
+.stats {
+    background: var(--accent-soft);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.stats-count strong {
+    font-size: 20px;
+    color: #9381ff;
+}
+
+.delete-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+/* ===== СТИЛИ ДЛЯ АДМИНКИ ===== */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--accent-soft);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.admin-header h1 {
+    font-size: 28px;
+    margin: 0;
+}
+
+.admin-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    background: var(--accent-soft);
+    border-radius: 16px;
+}
+
+.admin-section h2 {
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.role-badge {
+    display: inline-block;
+    min-width: 85px;              /* одинаковая ширина */
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.role-badge.admin {
+    background: #dc3545;          /* красный для админа */
+    color: white;
+}
+
+.role-badge.user {
+    background: #9381ff;          /* фиолетовый в стиле сайта */
+    color: white;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 30px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+}
+
+.refresh-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+#refreshTime {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.success-message {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.error-message {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.message-close {
+    margin-left: auto;
+    cursor: pointer;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+}
+
+/* ===== АДАПТАЦИЯ ДЛЯ РАЗНЫХ ЭКРАНОВ ===== */
+
+/* Большие экраны (десктоп) */
+@media (min-width: 1400px) {
+    .documents-container {
+        max-width: 1300px;
     }
+    
+    .admin-container {
+        max-width: 1400px;
+    }
+}
 
+/* Средние экраны (ноутбуки) */
+@media (max-width: 1200px) {
+    .documents-container,
+    .admin-container {
+        max-width: 95%;
+    }
+}
+
+/* Планшеты */
+@media (max-width: 992px) {
+    body {
+        padding: 70px 15px 15px 15px;
+    }
+    
+    .documents-container,
+    .admin-container {
+        padding: 25px;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stats {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* Мобильные телефоны */
+@media (max-width: 768px) {
+     body {
+        padding: 70px 10px 10px 10px;
+    }
+    
+    /* Шапка — компактнее и без центрирования */
+    .nav-panel {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+    }
+    
+    /* Ссылки навигации — прижаты влево, занимают доступное место */
+    .nav-links {
+        width: auto;
+        flex: 2 1 auto;
+        justify-content: flex-start;
+        gap: 4px;
+    }
+    
+    /* Уменьшаем отступы внутри ссылок */
+    .nav-link {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+    
+    /* Блок пользователя — прижат вправо, занимает минимум места */
+    .user-controls {
+        width: auto;
+        flex: 0 1 auto;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    
+    
+    /* Кнопка выхода — меньше паддингов */
+    .user-controls .logout-button {
+        padding: 5px 12px;
+        font-size: 12px;
+    }
+    
+    .chat-container {
+        height: calc(100vh - 100px);
+        border-radius: 20px;
+    }
+    
     .messages {
         padding: 20px;
+    }
+    
+    .upload-area {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+     .upload-label {
+        display: none;
+    }
+    .documents-container,
+    .admin-container {
+        padding: 20px;
+    }
+    
+    .documents-header h1,
+    .admin-header h1 {
+        font-size: 24px;
+    }
+    
+    .admin-section {
+        padding: 15px;
+    }
+    
+    .table-wrapper {
+        overflow-x: auto;
+    }
+    
+    th, td {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .btn, .delete-btn {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 480px) {
+    body {
+        padding: 70px 5px 5px 5px;
+    }
+    
+    .chat-container {
+        border-radius: 15px;
+    }
+    
+    .header {
+        padding: 20px 20px 15px;
+    }
+      /* Имя пользователя скрываем на узких экранах (опционально) */
+    .user-controls .username {
+        display: none;
+    }
+    
+    .header h1 {
+        font-size: 22px;
+    }
+    
+    .input-area {
+        padding: 15px;
+    }
+    
+    .documents-container,
+    .admin-container {
+        padding: 15px;
+    }
+    
+    th, td {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+}
+/* ===== УЛУЧШЕННЫЕ КНОПКИ ДЛЯ ТАБЛИЦ (АДМИНКА / ДОКУМЕНТЫ) ===== */
+.admin-container .btn,
+.admin-container .delete-btn,
+.documents-container .btn,
+.documents-container .delete-btn {
+    min-width: 120px;
+    padding: 5px 14px;            /* было 8px 16px — стало компактнее */
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    display: inline-block;
+    line-height: 1.4;
+    box-shadow: var(--shadow-soft);
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+    box-sizing: border-box;
+}
+
+/* Цвета кнопок */
+.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+.btn-success {
+    background: #10b981;
+    color: white;
+}
+.btn-primary {
+    background: #9381ff;
+    color: white;
+}
+
+/* Фиксируем ширину колонки "Действия" */
+#usersTable th:last-child,
+#usersTable td:last-child,
+#documentsTable th:last-child,
+#documentsTable td:last-child {
+    min-width: 300px;            /* достаточно для двух кнопок */
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Отступы между кнопками в ячейке */
+td .btn,
+td .delete-btn {
+    margin: 4px 3px;
+}
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+@media (max-width: 768px) {
+   .admin-container .btn,
+.admin-container .delete-btn,
+.documents-container .btn,
+.documents-container .delete-btn {
+    min-width: 100px;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.role-badge {
+    min-width: 70px;
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+    #usersTable th:last-child,
+    #usersTable td:last-child,
+    #documentsTable th:last-child,
+    #documentsTable td:last-child {
+        min-width: 240px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-container .btn,
+.admin-container .delete-btn,
+.documents-container .btn,
+.documents-container .delete-btn {
+    min-width: 90px;
+    padding: 5px 6px;
+    font-size: 11px;
+}
+
+.role-badge {
+    min-width: 65px;
+    padding: 3px 6px;
+    font-size: 10px;
+}
+
+    #usersTable th:last-child,
+    #usersTable td:last-child,
+    #documentsTable th:last-child,
+    #documentsTable td:last-child {
+        min-width: 210px;
     }
 }

@@ -15,4 +15,4 @@ pip install -r requirements.txt
 python main.py
 ```
 4. Откройте страницу в браузере
-http://localhost:8000/
+http://localhost:8080/
